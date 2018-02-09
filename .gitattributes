@@ -1,0 +1,4 @@
+*.R linguist-language=R
+*.Rmd linguist-language=R
+*.Rnw linguist-language=R
+*.ipnyb linguist-language=Julia
