@@ -4,4 +4,4 @@ This repository hosts code that reproduces classic models/papers that employ dif
 
 ## Index
 
-1. [Watts and Dodds, (2007)]("The-Tipping-Point.md")
+1. [Watts and Dodds, (2007)](The-Tipping-Point.md)
