@@ -1,7 +1,7 @@
 Influentials, networks and public opinion formation
 ================
 Watts and Dodds 2007
-Fri Feb 09 16:21:43 2018
+Fri Feb 09 16:30:23 2018
 
 ``` r
 library(tidyverse)
@@ -15,7 +15,7 @@ set.seed(20130810)
 dev.new()
 ```
 
-*Note: This script is my effort to replicate the results from the paper "Influentials, networks and public opinion formation", Watts and Dodds 2007. This is a self-didactic attempt.*
+*Note: This script is my effort to replicate the results from the paper "Influentials, networks and public opinion formation", Watts and Dodds (2007). This is a self-didactic attempt.*
 
 In marketing, there is a hugely popular idea that a small group of "influencers" are able to drive large scale diffusion of products/information on a scale beyond what can be achieved by ordinary individuals. In this script, we take a look at this hypothesis and explore the boundary conditions in which this idea is true.
 
@@ -155,28 +155,28 @@ system.time(data1 <- diffusionSimulation(n = numNodes, z = 4, rep(0.01, numNodes
 ```
 
     ##    user  system elapsed 
-    ##    3.17    0.08    4.06
+    ##    3.10    0.03    3.19
 
 ``` r
 system.time(data2 <- diffusionSimulation(n = numNodes, z = 4, rep(0.2, numNodes), numRealizations = 100))
 ```
 
     ##    user  system elapsed 
-    ##    4.05    0.07    4.13
+    ##    3.86    0.13    3.99
 
 ``` r
 system.time(data3 <- diffusionSimulation(n = numNodes, z = 32, rep(0.01, numNodes), numRealizations = 100))
 ```
 
     ##    user  system elapsed 
-    ##   19.11    1.93   21.05
+    ##   17.95    1.83   19.88
 
 ``` r
 system.time(data4 <- diffusionSimulation(n = numNodes, z = 32, rep(0.2, numNodes), numRealizations = 100))
 ```
 
     ##    user  system elapsed 
-    ##   18.15    2.46   20.89
+    ##   18.69    1.78   20.54
 
 ``` r
 results <- bind_rows(as.data.frame(data1), 
@@ -214,28 +214,16 @@ print(resultSummary)
 
 If we look at the mean elevation across all the simulation runs on the sample space, it looks like influentials provide a big jump in elevation compared to average individuals. This is a big `+1` for the influential hypothesis. A direct implication of this finding is that most marketing dollars should be directed towards identifying and 'influencing' the influencers.
 
-``` r
-# No wonder 'influencer marketing' was the buzz word for several years!
-#   
-# This is not the full picture though. Averages are severely misleading. 
-# A key idea of the Tipping Point is that these 'special' individuals are able 
-# to drive large swathes of ordinary individuals into adopting the idea because 
-# of their endorsement. Such large scale sequence of adoptions following a single 
-# adoption are called cascades. To be really effective, influentials should be 
-# able to drive cascades that are large not only on average, but also in scale. 
-# They have to be really, really, really big. The kind of big that poor ordinary 
-# individuals cannot generate, ever. 
+No wonder 'influencer marketing' was the buzz word for several years!
 
-# These kind of super large cascades are called global cascades.
-# 
-# A reasonable definition of a global cascade is one that occupies at least 10% 
-# of the network (this is based on prior literaure, but of course it is up to you 
-# to pick a cut-off). 
-# For the 10,000 node network we consider in this notebook, global cascades are 
-# those that reach 1000 nodes. 
+This is not the full picture though. Averages are severely misleading. A key idea of the Tipping Point is that these 'special' individuals are able to drive large swathes of ordinary individuals into adopting the idea because of their endorsement. Such large scale sequence of adoptions following a single adoption are called cascades. To be really effective, influentials should be able to drive cascades that are large not only on average, but also in scale. They have to be really, really, really big. The kind of big that poor ordinary individuals cannot generate, ever.
 
-# On this metric, we see that influentials drive roughly 25% more global cascades 
-# compared to randomly chosen individuals. 
+These kind of super large cascades are called global cascades.
 
-# Is this result worth the effort?
-```
+A reasonable definition of a global cascade is one that occupies at least 10% of the network (this is based on prior literaure, but of course it is up to you to pick a cut-off).
+
+For the 10,000 node network we consider in this notebook, global cascades are those that reach 1000 nodes.
+
+On this metric, we see that influentials drive roughly 25% more global cascades compared to randomly chosen individuals.
+
+Is this result worth the effort?

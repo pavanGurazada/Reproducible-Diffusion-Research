@@ -15,7 +15,7 @@ set.seed(20130810)
 dev.new()
 
 #' *Note: This script is my effort to replicate the results from the paper
-#' "Influentials, networks and public opinion formation", Watts and Dodds 2007.
+#' "Influentials, networks and public opinion formation", Watts and Dodds (2007).
 #' This is a self-didactic attempt.*
 #'
 #' In marketing, there is a hugely popular idea that a small group of
@@ -209,27 +209,28 @@ print(resultSummary)
 #' average individuals. This is a big `+1` for the influential hypothesis. A
 #' direct implication of this finding is that most marketing dollars should be
 #' directed towards identifying and 'influencing' the influencers.
-
-# No wonder 'influencer marketing' was the buzz word for several years!
-#   
-# This is not the full picture though. Averages are severely misleading. 
-# A key idea of the Tipping Point is that these 'special' individuals are able 
-# to drive large swathes of ordinary individuals into adopting the idea because 
-# of their endorsement. Such large scale sequence of adoptions following a single 
-# adoption are called cascades. To be really effective, influentials should be 
-# able to drive cascades that are large not only on average, but also in scale. 
-# They have to be really, really, really big. The kind of big that poor ordinary 
-# individuals cannot generate, ever. 
-
-# These kind of super large cascades are called global cascades.
-# 
-# A reasonable definition of a global cascade is one that occupies at least 10% 
-# of the network (this is based on prior literaure, but of course it is up to you 
-# to pick a cut-off). 
-# For the 10,000 node network we consider in this notebook, global cascades are 
-# those that reach 1000 nodes. 
-
-# On this metric, we see that influentials drive roughly 25% more global cascades 
-# compared to randomly chosen individuals. 
-
-# Is this result worth the effort?
+#'
+#' No wonder 'influencer marketing' was the buzz word for several years!
+#'
+#' This is not the full picture though. Averages are severely misleading. A key
+#' idea of the Tipping Point is that these 'special' individuals are able to
+#' drive large swathes of ordinary individuals into adopting the idea because of
+#' their endorsement. Such large scale sequence of adoptions following a single
+#' adoption are called cascades. To be really effective, influentials should be
+#' able to drive cascades that are large not only on average, but also in scale.
+#' They have to be really, really, really big. The kind of big that poor
+#' ordinary individuals cannot generate, ever.
+#'
+#' These kind of super large cascades are called global cascades.
+#'
+#' A reasonable definition of a global cascade is one that occupies at least 10%
+#' of the network (this is based on prior literaure, but of course it is up to
+#' you to pick a cut-off).
+#'
+#' For the 10,000 node network we consider in this notebook, global cascades are
+#' those that reach 1000 nodes.
+#'
+#' On this metric, we see that influentials drive roughly 25% more global
+#' cascades compared to randomly chosen individuals.
+#'
+#' Is this result worth the effort?

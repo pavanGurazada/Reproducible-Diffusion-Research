@@ -27,7 +27,7 @@ body {
 
 <h1 id="influentials-networks-and-public-opinion-formation">Influentials, networks and public opinion formation</h1>
 <p>Watts and Dodds 2007<br />
-Fri Feb 09 16:21:43 2018</p>
+Fri Feb 09 16:30:23 2018</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(tidyverse)
 <span class="kw">library</span>(igraph)
 <span class="kw">library</span>(gridExtra)
@@ -37,7 +37,7 @@ Fri Feb 09 16:21:43 2018</p>
 <span class="kw">set.seed</span>(<span class="dv">20130810</span>)
 
 <span class="kw">dev.new</span>()</code></pre></div>
-<p><em>Note: This script is my effort to replicate the results from the paper &quot;Influentials, networks and public opinion formation&quot;, Watts and Dodds 2007. This is a self-didactic attempt.</em></p>
+<p><em>Note: This script is my effort to replicate the results from the paper &quot;Influentials, networks and public opinion formation&quot;, Watts and Dodds (2007). This is a self-didactic attempt.</em></p>
 <p>In marketing, there is a hugely popular idea that a small group of &quot;influencers&quot; are able to drive large scale diffusion of products/information on a scale beyond what can be achieved by ordinary individuals. In this script, we take a look at this hypothesis and explore the boundary conditions in which this idea is true.</p>
 <p>Before we begin our exploration, it is instructive to look at the degree distribution of the underlying network on which we simulate the diffusion process. At the outset, note that we focus only on networks that have a balanced distribution around a mean for node degrees in this script. This means that most nodes have the same degree (equal to the mean), and there are a few nodes which have degrees spread about the mean. It is an open question whether such a distribution of degrees is reflective of the real-world and is not a subject of exploration here.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">numNodes &lt;-<span class="st"> </span><span class="fl">1e4</span>
@@ -152,16 +152,16 @@ degreeDistributions &lt;-<span class="st"> </span><span class="kw">bind_rows</sp
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">numNodes &lt;-<span class="st"> </span><span class="fl">1e4</span>
 <span class="kw">system.time</span>(data1 &lt;-<span class="st"> </span><span class="kw">diffusionSimulation</span>(<span class="dt">n =</span> numNodes, <span class="dt">z =</span> <span class="dv">4</span>, <span class="kw">rep</span>(<span class="fl">0.01</span>, numNodes), <span class="dt">numRealizations =</span> <span class="dv">100</span>))</code></pre></div>
 <pre><code>##    user  system elapsed 
-##    3.17    0.08    4.06</code></pre>
+##    3.10    0.03    3.19</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">system.time</span>(data2 &lt;-<span class="st"> </span><span class="kw">diffusionSimulation</span>(<span class="dt">n =</span> numNodes, <span class="dt">z =</span> <span class="dv">4</span>, <span class="kw">rep</span>(<span class="fl">0.2</span>, numNodes), <span class="dt">numRealizations =</span> <span class="dv">100</span>))</code></pre></div>
 <pre><code>##    user  system elapsed 
-##    4.05    0.07    4.13</code></pre>
+##    3.86    0.13    3.99</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">system.time</span>(data3 &lt;-<span class="st"> </span><span class="kw">diffusionSimulation</span>(<span class="dt">n =</span> numNodes, <span class="dt">z =</span> <span class="dv">32</span>, <span class="kw">rep</span>(<span class="fl">0.01</span>, numNodes), <span class="dt">numRealizations =</span> <span class="dv">100</span>))</code></pre></div>
 <pre><code>##    user  system elapsed 
-##   19.11    1.93   21.05</code></pre>
+##   17.95    1.83   19.88</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">system.time</span>(data4 &lt;-<span class="st"> </span><span class="kw">diffusionSimulation</span>(<span class="dt">n =</span> numNodes, <span class="dt">z =</span> <span class="dv">32</span>, <span class="kw">rep</span>(<span class="fl">0.2</span>, numNodes), <span class="dt">numRealizations =</span> <span class="dv">100</span>))</code></pre></div>
 <pre><code>##    user  system elapsed 
-##   18.15    2.46   20.89</code></pre>
+##   18.69    1.78   20.54</code></pre>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">results &lt;-<span class="st"> </span><span class="kw">bind_rows</span>(<span class="kw">as.data.frame</span>(data1), 
                      <span class="kw">as.data.frame</span>(data2),
                      <span class="kw">as.data.frame</span>(data3),
@@ -188,29 +188,13 @@ degreeDistributions &lt;-<span class="st"> </span><span class="kw">bind_rows</sp
 ## 1                          288</code></pre>
 <p><em>Final Analysis</em></p>
 <p>If we look at the mean elevation across all the simulation runs on the sample space, it looks like influentials provide a big jump in elevation compared to average individuals. This is a big <code>+1</code> for the influential hypothesis. A direct implication of this finding is that most marketing dollars should be directed towards identifying and 'influencing' the influencers.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># No wonder 'influencer marketing' was the buzz word for several years!</span>
-<span class="co">#   </span>
-<span class="co"># This is not the full picture though. Averages are severely misleading. </span>
-<span class="co"># A key idea of the Tipping Point is that these 'special' individuals are able </span>
-<span class="co"># to drive large swathes of ordinary individuals into adopting the idea because </span>
-<span class="co"># of their endorsement. Such large scale sequence of adoptions following a single </span>
-<span class="co"># adoption are called cascades. To be really effective, influentials should be </span>
-<span class="co"># able to drive cascades that are large not only on average, but also in scale. </span>
-<span class="co"># They have to be really, really, really big. The kind of big that poor ordinary </span>
-<span class="co"># individuals cannot generate, ever. </span>
-
-<span class="co"># These kind of super large cascades are called global cascades.</span>
-<span class="co"># </span>
-<span class="co"># A reasonable definition of a global cascade is one that occupies at least 10% </span>
-<span class="co"># of the network (this is based on prior literaure, but of course it is up to you </span>
-<span class="co"># to pick a cut-off). </span>
-<span class="co"># For the 10,000 node network we consider in this notebook, global cascades are </span>
-<span class="co"># those that reach 1000 nodes. </span>
-
-<span class="co"># On this metric, we see that influentials drive roughly 25% more global cascades </span>
-<span class="co"># compared to randomly chosen individuals. </span>
-
-<span class="co"># Is this result worth the effort?</span></code></pre></div>
+<p>No wonder 'influencer marketing' was the buzz word for several years!</p>
+<p>This is not the full picture though. Averages are severely misleading. A key idea of the Tipping Point is that these 'special' individuals are able to drive large swathes of ordinary individuals into adopting the idea because of their endorsement. Such large scale sequence of adoptions following a single adoption are called cascades. To be really effective, influentials should be able to drive cascades that are large not only on average, but also in scale. They have to be really, really, really big. The kind of big that poor ordinary individuals cannot generate, ever.</p>
+<p>These kind of super large cascades are called global cascades.</p>
+<p>A reasonable definition of a global cascade is one that occupies at least 10% of the network (this is based on prior literaure, but of course it is up to you to pick a cut-off).</p>
+<p>For the 10,000 node network we consider in this notebook, global cascades are those that reach 1000 nodes.</p>
+<p>On this metric, we see that influentials drive roughly 25% more global cascades compared to randomly chosen individuals.</p>
+<p>Is this result worth the effort?</p>
 
 </body>
 </html>
