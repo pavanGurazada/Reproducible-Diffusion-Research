@@ -2,6 +2,7 @@
 *.Rmd linguist-language=R
 *.Rnw linguist-language=R
 *.ipnyb linguist-language=Julia
+*.jl linguist-language=Julia
 
 *.html linguist-detectable=false
 *.pdf linguist-detectable=false
