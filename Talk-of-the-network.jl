@@ -129,7 +129,7 @@ function execute_simulation(parameter_space, n_nodes::Int, T::Int)
         old_s, old_w = s, w
     end
 
-    return [colnames; output]
+    return output
 end
 
 parameter_space = [(s, w, alpha, beta_w, beta_s) for s in floor.(Int, linspace(5, 29, 7)),
@@ -138,7 +138,5 @@ parameter_space = [(s, w, alpha, beta_w, beta_s) for s in floor.(Int, linspace(5
                                                      beta_w in linspace(0.005, 0.015, 7),
                                                      beta_s in linspace(0.01, 0.07, 7)]
 
-@time results = execute_simulation(parameter_space, 3000, 30)
-
-
-writecsv("test.csv", 1:1000)
+@time results = execute_simulation(parameter_space, 100, 2)
+writecsv(pwd() * "\\TOTN_results.csv", results)
