@@ -1,9 +1,10 @@
 #' ---
 #' title: "Talk of the network, the tidy way "
 #' author: Pavan Gurazada
-#' last update: Sat Mar 03 06:54:34 2018
 #' output: github_document
 #' ---
+
+#' last update: Sun Mar 04 10:04:24 2018
 
 #' An attempt to replicate the results from the influential paper, "Talk of the
 #' network", using the igraph-tidygraph combination. To begin with, we explore
@@ -53,10 +54,6 @@ create_star(10, directed = TRUE, mutual = TRUE) %>%
   activate(edges) %>% 
   sample_frac(0.7) %>% 
   mutate(single_edge = !edge_is_mutual())
-
-create_notable('chvatal') %>% 
-  activate(nodes) %>% 
-  mutate(neighborhood = local_members(mindist = 1))
 
 create_notable('chvatal') %>% 
   activate(nodes) %>% 
@@ -113,7 +110,7 @@ reset_node_status <- function(G) {
 
 count_active_str_ties <- function(G, node_network_id, node, node_status) {
   
-  nbrs <- neighborhood(G[[node_network_id]], node)
+  nbrs <- neighbors(G[[node_network_id]], node)
   
   nbr_status <- node_status[[node_network_id]][nbrs]
   
@@ -130,19 +127,96 @@ random_meetings <- function(G, node_network_id, node, node_status, n_weak_ties) 
   
   other_network_ids <- all_network_ids[all_network_ids != node_network_id]
   
-  possible_weak_ties <- list()
+  possible_weak_ties <- data.frame(Network = integer(), Weak_Tie = integer())
   nsamples <- 1
   
   while(nsamples < n_weak_ties) {
-    rand_network_id <- sample(other_network_ids)
-    rand_nbr <- sample(V(G[[rand_network_id]]))
+    rand_network_id <- sample(other_network_ids, size = 1)
+    rand_nbr <- sample(as.vector(V(G[[rand_network_id]])), size = 1)
+    possible_weak_tie <- data.frame(Network = rand_network_id, Weak_Tie = rand_nbr)
     
-    if (possible_weak_ties[[rand_network_id]] == rand_nbr) {
-      possible_weak_ties[[rand_network_id]] <- rand_nbr
+    if (nrow(anti_join(possible_weak_ties, possible_weak_tie, by = c("Network", "Weak_Tie"))) == 0) {
+      possible_weak_ties <- rbind(possible_weak_ties, possible_weak_tie)
       nsamples <- nsamples + 1
     }
   }
   
-  #n_active_wk_ties <- 
-  
+  return(possible_weak_ties)
 }
+
+count_active_wk_ties <- function(possible_weak_ties, node_status) {
+  n_active_wk_ties <- 0
+  
+  for (i in 1:nrow(possible_weak_ties)) {
+    if (node_status[[possible_weak_ties[i, 1]]][possible_weak_ties[i, 2]])
+      n_active_wk_ties <- n_active_wk_ties + 1
+  }
+  
+  return(n_active_wk_ties)
+}
+
+#' One more ideal candidate for C++
+
+evolve <- function(G, node_status, n_weak_ties, alpha, beta_w, beta_s) {
+  for (node_network_id in sample(1:length(G))) {
+    for (node in as.vector(sample(V(G[[node_network_id]])))) {
+      if (!node_status[[node_network_id]][node]) {
+        n_active_str_ties <- count_active_str_ties(G, node_network_id, node, node_status)
+        possible_weak_ties <- random_meetings(G, node_network_id, node, node_status, n_weak_ties)
+        n_active_wk_ties <- count_active_wk_ties(possible_weak_ties, node_status)
+        
+        activation_prob <- 1 - (1 - alpha) * (1 - beta_w)^n_active_wk_ties * (1 - beta_s)^n_active_str_ties
+        
+        if (runif(n = 1) < activation_prob) node_status[[node_network_id]][node] = TRUE
+      }
+      
+    }
+  }
+  return(node_status)
+}
+
+#' One more candidate for C++ is the function below
+
+simulate <- function(parameter_space, n_nodes) {
+  
+  output <- data.frame(s = integer(), w = integer(), alpha = double(), 
+                       beta_w = double(), beta_s = double(), 
+                       t = integer(), num_engaged = integer())
+  
+  cat("\n Beginning simulation at: ", date())
+  
+  for (i in 1:nrow(parameter_space)) {
+    s_i <- parameter_space$s[i]
+    w_i <- parameter_space$w[i]
+    alpha_i <- parameter_space$alpha[i]
+    beta_w_i <- parameter_space$beta_w[i]
+    beta_s_i <- parameter_space$beta_w[i]
+    
+    G <- initialize_graph(n_nodes, s_i)
+    node_status <- reset_node_status(G)
+    
+    n_engaged <- reduce(node_status, sum)
+    t_i <- 1
+    
+    while (n_engaged < floor(0.95 * n_nodes)) {
+      node_status <- evolve(G, node_status, w_i, alpha_i, beta_w_i, beta_s_i)
+      n_engaged <- reduce(node_status, sum)
+      output <- rbind(output, data.frame(s = s_i, w = w_i, alpha = alpha_i, 
+                                         beta_w = beta_w_i, beta_s = beta_s_i,
+                                         t = t_i, num_engaged = n_engaged))
+      t_i <- t_i + 1
+    }
+    cat("\n Finished setting: ", i, " at : ", date())
+  }
+  
+  return (output)
+}
+
+parameter_space <- expand.grid(s = seq(5, 29, length.out = 3), 
+                               w = seq(5, 29, length.out = 3), 
+                               alpha = seq(0.0005, 0.01, length.out = 3), 
+                               beta_w = seq(0.005, 0.015, length.out = 3), 
+                               beta_s = seq(0.01, 0.07, length.out = 3))
+
+results <- simulate(parameter_space, 3000)
+
