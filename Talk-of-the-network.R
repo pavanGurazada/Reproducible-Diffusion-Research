@@ -19,6 +19,8 @@ library(tidygraph)
 library(tidyverse)
 library(igraph)
 
+set.seed(20130810)
+
 play_erdos_renyi(10, 0.5) %>% 
   activate(nodes) %>% 
   mutate(degree = centrality_degree()) %>% 
@@ -56,6 +58,10 @@ create_notable('chvatal') %>%
   activate(nodes) %>% 
   mutate(neighborhood = local_members(mindist = 1))
 
+create_notable('chvatal') %>% 
+  activate(nodes) %>% 
+  mutate(neighborhood = local_members(mindist = 1))
+
 #' Now, moving to the paper 'Talk of the network'
 #'
 #' The central logic of the diffusion simulation from the paper is as follows:
@@ -76,12 +82,8 @@ create_notable('chvatal') %>%
 initialize_graph <- function(n, n_strong_ties) {
   n_subgraphs <- floor(n/n_strong_ties)
   
-  G <- vector("list", n_subgraphs)
-  
-  for (i in 1:n_subgraphs) {
-    G[[i]] <- make_full_graph(n_strong_ties)
-  }
-  
+  G <- lapply(1:n_subgraphs, function(g) make_full_graph(n_strong_ties))
+ 
   return(G)
 }
 
@@ -90,11 +92,9 @@ initialize_graph <- function(n, n_strong_ties) {
 #' the nodes to `FALSE`.
 
 reset_node_status <- function(G) {
-  node_status <- vector("list", length(G))
   
-  for (g in 1:length(G))
-    node_status[[g]] <- rep(FALSE, vcount(G[[g]]))
-  
+  node_status <- lapply(1:length(G), function(g) rep(FALSE, vcount(G[[g]])))
+
   return(node_status)
 }
 
@@ -113,5 +113,36 @@ reset_node_status <- function(G) {
 
 count_active_str_ties <- function(G, node_network_id, node, node_status) {
   
+  nbrs <- neighborhood(G[[node_network_id]], node)
+  
+  nbr_status <- node_status[[node_network_id]][nbrs]
+  
+  return(sum(nbr_status))
 }
 
+# The following function is the one that should be an ideal candidate to be
+# written in C++
+
+random_meetings <- function(G, node_network_id, node, node_status, n_weak_ties) {
+  all_network_ids <- 1:length(G)
+  
+  # Figure out the ids of networks other than the nodes original network
+  
+  other_network_ids <- all_network_ids[all_network_ids != node_network_id]
+  
+  possible_weak_ties <- list()
+  nsamples <- 1
+  
+  while(nsamples < n_weak_ties) {
+    rand_network_id <- sample(other_network_ids)
+    rand_nbr <- sample(V(G[[rand_network_id]]))
+    
+    if (possible_weak_ties[[rand_network_id]] == rand_nbr) {
+      possible_weak_ties[[rand_network_id]] <- rand_nbr
+      nsamples <- nsamples + 1
+    }
+  }
+  
+  #n_active_wk_ties <- 
+  
+}
