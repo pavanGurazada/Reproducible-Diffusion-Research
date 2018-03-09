@@ -77,10 +77,10 @@ double network_externalities_effect(const sp_mat& A, const int& node,
 
 // [[Rcpp::export]]
 LogicalVector evolve_e(const sp_mat& A, 
-                     LogicalVector& node_status, 
-                     const NumericVector& threshold,
-                     double a, 
-                     double b) {
+                       LogicalVector& node_status, 
+                       const NumericVector& threshold,
+                       double a, 
+                       double b) {
   
   for (auto& node : shuffled_vertices(A)){
     if (randu() < network_externalities_effect(A, node, node_status, threshold, a, b))
@@ -92,9 +92,9 @@ LogicalVector evolve_e(const sp_mat& A,
 
 // [[Rcpp::export]]
 LogicalVector evolve_ne(const sp_mat& A, 
-                     LogicalVector& node_status, 
-                     const NumericVector& threshold, 
-                     double a) {
+                        LogicalVector& node_status, 
+                        const NumericVector& threshold, 
+                        double a) {
   
   for (auto& node : shuffled_vertices(A)) {
     if (randu() < a)
@@ -112,7 +112,7 @@ DataFrame simulate(sp_mat& A,
                    const double& mu_i,
                    const double& sigma_i) {
  
-  int T = 30, n_realizations = 10;
+  int T = 30, n_realizations = 5;
   int data_points = T * n_realizations;
   
   LogicalVector node_status_e; 
@@ -123,7 +123,7 @@ DataFrame simulate(sp_mat& A,
   
   int i = 0; // indexing the vectors
   
-  for (int r = 1; r < n_realizations; ++r) {
+  for (int r = 1; r <= n_realizations; ++r) {
     
     Rcout << "Realization: " << r << std::endl;
     
@@ -141,14 +141,14 @@ DataFrame simulate(sp_mat& A,
       
       realizations[i] = r;
       time_steps[i] = t;
-      //n_engaged_e[i] = sum(node_status_e);
-      //n_engaged_ne[i] = sum(node_status_ne);
-      n_engaged_e[i] = accumulate(node_status_e.begin(), node_status_e.end(), 0);
-      n_engaged_ne[i] = accumulate(node_status_ne.begin(), node_status_ne.end(), 0);
+      n_engaged_e[i] = sum(node_status_e);
+      n_engaged_ne[i] = sum(node_status_ne);
+      //n_engaged_e[i] = accumulate(node_status_e.begin(), node_status_e.end(), 0);
+      //n_engaged_ne[i] = accumulate(node_status_ne.begin(), node_status_ne.end(), 0);
       a[i] = a_i;
       b[i] = b_i;
       mu[i] = mu_i;
-      sigma [i] = sigma_i;
+      sigma[i] = sigma_i;
       i++;
     }
   }
