@@ -6,60 +6,72 @@
 
 using namespace Rcpp;
 using namespace arma;
+
 using std::pow;
 using std::accumulate;
+using std::vector;
+using std::random_shuffle;
+using std::normal_distribution;
 
-// [[Rcpp::export]]
-IntegerVector neighbours(const sp_mat& A, const int& node) {
-  IntegerVector nbrs; 
+vector<int> neighbours(const sp_mat& A, const int& node) {
+  vector<int> nbrs; 
+  int n = A.n_rows;
   
-  sp_mat::const_row_iterator start = A.begin_row(node-1);
-  sp_mat::const_row_iterator end = A.end_row(node-1);
-  
-  for (sp_mat::const_row_iterator& i = start; i != end; ++i) {
-      nbrs.push_back(i.col() + 1);
+  for (int i = 0; i < n; ++i) {
+    if (A(i, node-1) == 1) nbrs.push_back(i+1);
   }
   
   return nbrs;
 }
 
-// [[Rcpp::export]]
-int n_nodes(const sp_mat& A) {
+vector<bool> reset_nodes(sp_mat& A) {
+  vector<bool> node_status;
   int n = A.n_rows;
   
-  return n;
-}
-
-// [[Rcpp::export]]
-LogicalVector reset_nodes(sp_mat& A) {
-  LogicalVector node_status;
-  
-  for (int i = 0; i < n_nodes(A); ++i) {
+  for (int i = 0; i < n; ++i) {
     node_status.push_back(false);
   }
   
   return node_status;
 }
 
-// [[Rcpp::export]]
-IntegerVector shuffled_vertices(const sp_mat& A) {
-  IntegerVector sv;
+vector<double> initialize_threshold(sp_mat& A, double mu, double sigma) {
+  std::random_device rd;
+  std::mt19937 gen(rd());
   
-  for (int i = 1; i <= n_nodes(A); ++i) {
-    sv.push_back(i);
+  normal_distribution<double> d(mu, sigma);
+  
+  vector<double> threshold;
+  int n = A.n_rows;
+  
+  for (int i = 0; i < n; ++i) {
+    threshold.push_back(d(gen));
   }
   
-  return sample(sv, sv.length(), false);
+  return threshold;
 }
 
-// [[Rcpp::export]]
-double network_externalities_effect(const sp_mat& A, const int& node, 
-                                    LogicalVector& node_status, 
-                                    const NumericVector& threshold, 
-                                    double a, double b) {
-  IntegerVector nbrs = neighbours(A, node);
+vector<int> shuffled_nodes(const sp_mat& A) {
+  vector<int> sn;
+  int n = A.n_rows;
+  
+  for (int i = 1; i <= n; ++i) {
+    sn.push_back(i);
+  }
+  
+  random_shuffle(sn.begin(), sn.end());
+  
+  return sn;
+}
 
-  if (sum(node_status)/n_nodes(A) > threshold[node-1]) {
+double network_externalities_effect(const sp_mat& A, const int& node, 
+                                    vector<bool>& node_status, 
+                                    const vector<double>& threshold, 
+                                    double a, double b) {
+  vector<int> nbrs = neighbours(A, node);
+  int n = A.n_rows;
+
+  if (accumulate(node_status.begin(), node_status.end(), 0)/n > threshold[node-1]) {
     
     int n_active_nbrs = 0;
     
@@ -69,35 +81,38 @@ double network_externalities_effect(const sp_mat& A, const int& node,
     
     return 1 - (1 - a) * pow(1 - b, n_active_nbrs);
     
-  } else {
-    
-    return a;
+  } 
+  
+  else {
+      
+      return a;
   }
 }
 
-// [[Rcpp::export]]
-LogicalVector evolve_e(const sp_mat& A, 
-                       LogicalVector& node_status, 
-                       const NumericVector& threshold,
-                       double a, 
-                       double b) {
+vector<bool> evolve_e(const sp_mat& A, 
+                      vector<bool>& node_status, 
+                      const vector<double>& threshold,
+                      double a, 
+                      double b) {
   
-  for (auto& node : shuffled_vertices(A)){
-    if (randu() < network_externalities_effect(A, node, node_status, threshold, a, b))
+  vector<int> s_nodes = shuffled_nodes(A);
+  
+  for (auto& node : s_nodes) {
+    if (R::runif(0, 1) < network_externalities_effect(A, node, node_status, threshold, a, b))
       node_status[node-1] = true;
   }
   
   return node_status;
 }
 
-// [[Rcpp::export]]
-LogicalVector evolve_ne(const sp_mat& A, 
-                        LogicalVector& node_status, 
-                        const NumericVector& threshold, 
-                        double a) {
+vector<bool> evolve_ne(const sp_mat& A, 
+                       vector<bool>& node_status, 
+                       const vector<double>& threshold, 
+                       double a) {
+  vector<int> s_nodes = shuffled_nodes(A);
   
-  for (auto& node : shuffled_vertices(A)) {
-    if (randu() < a)
+  for (auto& node : s_nodes) {
+    if (R::runif(0, 1) < a)
       node_status[node-1] = true;
   }
   
@@ -112,16 +127,12 @@ DataFrame simulate(sp_mat& A,
                    const double& mu_i,
                    const double& sigma_i) {
  
-  int T = 30, n_realizations = 5;
-  int data_points = T * n_realizations;
+  int T = 30, n_realizations = 3;
+
+  vector<bool> node_status_e, node_status_ne; 
   
-  LogicalVector node_status_e; 
-  LogicalVector node_status_ne; 
-  
-  IntegerVector realizations(data_points), time_steps(data_points), n_engaged_e(data_points), n_engaged_ne(data_points);
-  NumericVector a(data_points), b(data_points), mu(data_points), sigma(data_points);
-  
-  int i = 0; // indexing the vectors
+  vector<int> realizations, time_steps, n_engaged_e, n_engaged_ne;
+  vector<double> a, b, mu, sigma;
   
   for (int r = 1; r <= n_realizations; ++r) {
     
@@ -130,26 +141,22 @@ DataFrame simulate(sp_mat& A,
     node_status_e = reset_nodes(A);
     node_status_ne = reset_nodes(A);
     
-    NumericVector threshold = rnorm(n_nodes(A), mu_i, sigma_i);
+    vector<double> threshold = initialize_threshold(A, mu_i, sigma_i);
     
     for (int t = 1; t <= T; ++t) {
       evolve_e(A, node_status_e, threshold, a_i, b_i);
       evolve_ne(A, node_status_ne, threshold, a_i);
-      //NumericVector v = {r, t, a, b, mu, sigma, sum(node_status_e), sum(node_status_ne)};
       
       Rcout << "Time step: " << t << std::endl;
       
-      realizations[i] = r;
-      time_steps[i] = t;
-      n_engaged_e[i] = sum(node_status_e);
-      n_engaged_ne[i] = sum(node_status_ne);
-      //n_engaged_e[i] = accumulate(node_status_e.begin(), node_status_e.end(), 0);
-      //n_engaged_ne[i] = accumulate(node_status_ne.begin(), node_status_ne.end(), 0);
-      a[i] = a_i;
-      b[i] = b_i;
-      mu[i] = mu_i;
-      sigma[i] = sigma_i;
-      i++;
+      realizations.push_back(r);
+      time_steps.push_back(t);
+      n_engaged_e.push_back(accumulate(node_status_e.begin(), node_status_e.end(), 0));
+      n_engaged_ne.push_back(accumulate(node_status_ne.begin(), node_status_ne.end(), 0));
+      a.push_back(a_i);
+      b.push_back(b_i);
+      mu.push_back(mu_i);
+      sigma.push_back(sigma_i);
     }
   }
   
@@ -165,7 +172,6 @@ DataFrame simulate(sp_mat& A,
 }
 
 
-
  
 /*** R
 
@@ -174,8 +180,7 @@ DataFrame simulate(sp_mat& A,
 #' author: Pavan Gurazada
 #' output: github_document
 #' ---
-#' last update: Thu Mar 08 12:17:12 2018
-
+#' last update: Sat Mar 10 14:19:21 2018
 
 # library(igraph)
 # 
