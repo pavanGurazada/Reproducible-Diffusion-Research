@@ -13,49 +13,45 @@ using std::vector;
 using std::random_shuffle;
 using std::normal_distribution;
 
-vector<int> neighbours(const sp_mat& A, const int& node) {
+vector<int> neighbours(const sp_mat& A, const int& n_nodes, const int& node) {
   vector<int> nbrs; 
-  int n = A.n_rows;
   
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < n_nodes; ++i) {
     if (A(i, node-1) == 1) nbrs.push_back(i+1);
   }
   
   return nbrs;
 }
 
-vector<bool> reset_nodes(sp_mat& A) {
+vector<bool> reset_nodes(sp_mat& A, const int& n_nodes) {
   vector<bool> node_status;
-  int n = A.n_rows;
-  
-  for (int i = 0; i < n; ++i) {
+
+  for (int i = 0; i < n_nodes; ++i) {
     node_status.push_back(false);
   }
   
   return node_status;
 }
 
-vector<double> initialize_threshold(sp_mat& A, double mu, double sigma) {
+vector<double> initialize_threshold(sp_mat& A, const int& n_nodes, const double& mu, const double& sigma) {
   std::random_device rd;
   std::mt19937 gen(rd());
   
   normal_distribution<double> d(mu, sigma);
   
   vector<double> threshold;
-  int n = A.n_rows;
   
-  for (int i = 0; i < n; ++i) {
+  for (int i = 0; i < n_nodes; ++i) {
     threshold.push_back(d(gen));
   }
   
   return threshold;
 }
 
-vector<int> shuffled_nodes(const sp_mat& A) {
+vector<int> shuffled_nodes(const sp_mat& A, const int& n_nodes) {
   vector<int> sn;
-  int n = A.n_rows;
   
-  for (int i = 1; i <= n; ++i) {
+  for (int i = 1; i <= n_nodes; ++i) {
     sn.push_back(i);
   }
   
@@ -64,14 +60,13 @@ vector<int> shuffled_nodes(const sp_mat& A) {
   return sn;
 }
 
-double network_externalities_effect(const sp_mat& A, const int& node, 
+double network_externalities_effect(const sp_mat& A, const int& n_nodes, const int& node, 
                                     vector<bool>& node_status, 
                                     const vector<double>& threshold, 
-                                    double a, double b) {
-  vector<int> nbrs = neighbours(A, node);
-  int n = A.n_rows;
+                                    const double& a, const double& b) {
+  vector<int> nbrs = neighbours(A, n_nodes, node);
 
-  if (accumulate(node_status.begin(), node_status.end(), 0)/n > threshold[node-1]) {
+  if (accumulate(node_status.begin(), node_status.end(), 0)/n_nodes > threshold[node-1]) {
     
     int n_active_nbrs = 0;
     
@@ -89,34 +84,32 @@ double network_externalities_effect(const sp_mat& A, const int& node,
   }
 }
 
-vector<bool> evolve_e(const sp_mat& A, 
-                      vector<bool>& node_status, 
-                      const vector<double>& threshold,
-                      double a, 
-                      double b) {
+void evolve_e(const sp_mat& A, const int& n_nodes,
+              vector<bool>& node_status, 
+              const vector<double>& threshold,
+              const double& a, 
+              const double& b) {
   
-  vector<int> s_nodes = shuffled_nodes(A);
+  vector<int> s_nodes = shuffled_nodes(A, n_nodes);
   
   for (auto& node : s_nodes) {
-    if (R::runif(0, 1) < network_externalities_effect(A, node, node_status, threshold, a, b))
+    if (R::runif(0, 1) < network_externalities_effect(A, n_nodes, node, node_status, threshold, a, b))
       node_status[node-1] = true;
   }
-  
-  return node_status;
+
 }
 
-vector<bool> evolve_ne(const sp_mat& A, 
-                       vector<bool>& node_status, 
-                       const vector<double>& threshold, 
-                       double a) {
-  vector<int> s_nodes = shuffled_nodes(A);
+void evolve_ne(const sp_mat& A, const int& n_nodes,
+               vector<bool>& node_status, 
+               const vector<double>& threshold, 
+               const double& a) {
+  vector<int> s_nodes = shuffled_nodes(A, n_nodes);
   
   for (auto& node : s_nodes) {
     if (R::runif(0, 1) < a)
       node_status[node-1] = true;
   }
   
-  return node_status;
 }
 
 
@@ -128,6 +121,7 @@ DataFrame simulate(sp_mat& A,
                    const double& sigma_i) {
  
   int T = 30, n_realizations = 10;
+  const int n_nodes = A.n_cols;
 
   vector<bool> node_status_e, node_status_ne; 
   
@@ -136,14 +130,14 @@ DataFrame simulate(sp_mat& A,
   
   for (int r = 1; r <= n_realizations; ++r) {
 
-    node_status_e = reset_nodes(A);
-    node_status_ne = reset_nodes(A);
+    node_status_e = reset_nodes(A, n_nodes);
+    node_status_ne = reset_nodes(A, n_nodes);
     
-    vector<double> threshold = initialize_threshold(A, mu_i, sigma_i);
+    vector<double> threshold = initialize_threshold(A, n_nodes, mu_i, sigma_i);
     
     for (int t = 1; t <= T; ++t) {
-      evolve_e(A, node_status_e, threshold, a_i, b_i);
-      evolve_ne(A, node_status_ne, threshold, a_i);
+      evolve_e(A, n_nodes, node_status_e, threshold, a_i, b_i);
+      evolve_ne(A, n_nodes, node_status_ne, threshold, a_i);
     
       realizations.push_back(r);
       time_steps.push_back(t);
