@@ -8,10 +8,10 @@ using namespace Rcpp;
 using namespace arma;
 
 using std::pow;
-using std::accumulate;
 using std::vector;
 using std::random_shuffle;
 using std::normal_distribution;
+using std::count;
 
 vector<int> neighbours(const sp_mat& A, const int& n_nodes, const int& node) {
   vector<int> nbrs; 
@@ -23,7 +23,7 @@ vector<int> neighbours(const sp_mat& A, const int& n_nodes, const int& node) {
   return nbrs;
 }
 
-vector<bool> reset_nodes(sp_mat& A, const int& n_nodes) {
+vector<bool> reset_nodes(const sp_mat& A, const int& n_nodes) {
   vector<bool> node_status;
 
   for (int i = 0; i < n_nodes; ++i) {
@@ -33,7 +33,7 @@ vector<bool> reset_nodes(sp_mat& A, const int& n_nodes) {
   return node_status;
 }
 
-vector<double> initialize_threshold(sp_mat& A, const int& n_nodes, const double& mu, const double& sigma) {
+vector<double> initialize_threshold(const sp_mat& A, const int& n_nodes, const double& mu, const double& sigma) {
   std::random_device rd;
   std::mt19937 gen(rd());
   
@@ -66,7 +66,7 @@ double network_externalities_effect(const sp_mat& A, const int& n_nodes, const i
                                     const double& a, const double& b) {
   vector<int> nbrs = neighbours(A, n_nodes, node);
 
-  if (accumulate(node_status.begin(), node_status.end(), 0)/n_nodes > threshold[node-1]) {
+  if (count(node_status.begin(), node_status.end(), true)/n_nodes > threshold[node-1]) {
     
     int n_active_nbrs = 0;
     
@@ -83,6 +83,7 @@ double network_externalities_effect(const sp_mat& A, const int& n_nodes, const i
       return a;
   }
 }
+
 
 void evolve_e(const sp_mat& A, const int& n_nodes,
               vector<bool>& node_status, 
@@ -114,7 +115,7 @@ void evolve_ne(const sp_mat& A, const int& n_nodes,
 
 
 // [[Rcpp::export]]
-DataFrame simulate(sp_mat& A,
+DataFrame simulate(const sp_mat& A,
                    const double& a_i, 
                    const double& b_i,
                    const double& mu_i,
@@ -136,13 +137,14 @@ DataFrame simulate(sp_mat& A,
     vector<double> threshold = initialize_threshold(A, n_nodes, mu_i, sigma_i);
     
     for (int t = 1; t <= T; ++t) {
+
       evolve_e(A, n_nodes, node_status_e, threshold, a_i, b_i);
       evolve_ne(A, n_nodes, node_status_ne, threshold, a_i);
-    
+
       realizations.push_back(r);
       time_steps.push_back(t);
-      n_engaged_e.push_back(accumulate(node_status_e.begin(), node_status_e.end(), 0));
-      n_engaged_ne.push_back(accumulate(node_status_ne.begin(), node_status_ne.end(), 0));
+      n_engaged_e.push_back(count(node_status_e.begin(), node_status_e.end(), true));
+      n_engaged_ne.push_back(count(node_status_ne.begin(), node_status_ne.end(), true));
       a.push_back(a_i);
       b.push_back(b_i);
       mu.push_back(mu_i);
@@ -150,6 +152,7 @@ DataFrame simulate(sp_mat& A,
     }
   }
   
+
   DataFrame output = DataFrame::create(Named("realization") = realizations,
                                        Named("time_steps") = time_steps,
                                        Named("a") = a,
@@ -158,6 +161,7 @@ DataFrame simulate(sp_mat& A,
                                        Named("sigma") = sigma,
                                        Named("n_engaged_e") = n_engaged_e,
                                        Named("n_engaged_ne") = n_engaged_ne);
+
   return output;
 }
 
@@ -170,7 +174,7 @@ DataFrame simulate(sp_mat& A,
 #' author: Pavan Gurazada
 #' output: github_document
 #' ---
-#' last update: Sat Mar 10 14:19:21 2018
+#' last update: Sat Mar 10 21:48:39 2018
 
 library(igraph)
 
@@ -184,8 +188,9 @@ results <- data.frame()
 g <- erdos.renyi.game(625, 8/625)
 A <- get.adjacency(g)
 
+cat("\n Starting simulation at ", date(), "\n")
 for (row in 1:nrow(parameter_space)) {
-  cat("\n Starting simulation on setting :", row, " at ", date(), "\n")
+
 
   output <- simulate(A,
                      parameter_space[row, 1], parameter_space[row, 2],
@@ -193,5 +198,7 @@ for (row in 1:nrow(parameter_space)) {
 
   results <- rbind(results, output)
 }
+
+cat("\n Ending simulation at ", date(), "\n")
 
 */
