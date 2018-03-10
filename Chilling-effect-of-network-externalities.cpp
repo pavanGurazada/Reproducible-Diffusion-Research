@@ -127,7 +127,7 @@ DataFrame simulate(sp_mat& A,
                    const double& mu_i,
                    const double& sigma_i) {
  
-  int T = 30, n_realizations = 3;
+  int T = 30, n_realizations = 10;
 
   vector<bool> node_status_e, node_status_ne; 
   
@@ -135,9 +135,7 @@ DataFrame simulate(sp_mat& A,
   vector<double> a, b, mu, sigma;
   
   for (int r = 1; r <= n_realizations; ++r) {
-    
-    Rcout << "Realization: " << r << std::endl;
-    
+
     node_status_e = reset_nodes(A);
     node_status_ne = reset_nodes(A);
     
@@ -146,9 +144,7 @@ DataFrame simulate(sp_mat& A,
     for (int t = 1; t <= T; ++t) {
       evolve_e(A, node_status_e, threshold, a_i, b_i);
       evolve_ne(A, node_status_ne, threshold, a_i);
-      
-      Rcout << "Time step: " << t << std::endl;
-      
+    
       realizations.push_back(r);
       time_steps.push_back(t);
       n_engaged_e.push_back(accumulate(node_status_e.begin(), node_status_e.end(), 0));
@@ -182,28 +178,26 @@ DataFrame simulate(sp_mat& A,
 #' ---
 #' last update: Sat Mar 10 14:19:21 2018
 
-# library(igraph)
-# 
-# parameter_space <- expand.grid(a = seq(0.005, 0.05, length.out = 5),
-#                                b = seq(0.05, 0.25, length.out = 5),
-#                                mu = seq(0.01, 0.2, length.out = 5),
-#                                sigma = seq(0.005, 0.025, length.out = 5))
-# 
-# n_realizations <- 10
-# 
-# results <- data.frame()
-# 
-# g <- erdos.renyi.game(625, 8/625)
-# A <- get.adjacency(g)
-# 
-# for (row in 1:nrow(parameter_space)) {
-#   cat("\n Starting simulation on setting :", row, " at ", date(), |)
-# 
-#   output <- simulate(A,
-#                      parameter_space[row, 1], parameter_space[row, 2],
-#                      parameter_space[row, 3], parameter_space[row, 4])
-# 
-#   results <- rbind(results, output)
-# }
+library(igraph)
+
+parameter_space <- expand.grid(a = seq(0.005, 0.05, length.out = 5),
+                               b = seq(0.05, 0.25, length.out = 5),
+                               mu = seq(0.01, 0.2, length.out = 5),
+                               sigma = seq(0.005, 0.025, length.out = 5))
+
+results <- data.frame()
+
+g <- erdos.renyi.game(625, 8/625)
+A <- get.adjacency(g)
+
+for (row in 1:nrow(parameter_space)) {
+  cat("\n Starting simulation on setting :", row, " at ", date(), "\n")
+
+  output <- simulate(A,
+                     parameter_space[row, 1], parameter_space[row, 2],
+                     parameter_space[row, 3], parameter_space[row, 4])
+
+  results <- rbind(results, output)
+}
 
 */
