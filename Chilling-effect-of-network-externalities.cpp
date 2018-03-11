@@ -13,13 +13,6 @@ using std::random_shuffle;
 using std::normal_distribution;
 using std::count;
 
-struct Network {
-  sp_mat A;
-  int n_nodes;
-  vector<bool> node_status;
-  vector<double> threshold;
-};
-
 vector<int> neighbours(const sp_mat& A, const int& n_nodes, const int& node) {
   vector<int> nbrs; 
   
