@@ -13,6 +13,13 @@ using std::random_shuffle;
 using std::normal_distribution;
 using std::count;
 
+struct Network {
+  sp_mat A;
+  int n_nodes;
+  vector<bool> node_status;
+  vector<double> threshold;
+};
+
 vector<int> neighbours(const sp_mat& A, const int& n_nodes, const int& node) {
   vector<int> nbrs; 
   
@@ -85,11 +92,11 @@ double network_externalities_effect(const sp_mat& A, const int& n_nodes, const i
 }
 
 
-void evolve_e(const sp_mat& A, const int& n_nodes,
-              vector<bool>& node_status, 
-              const vector<double>& threshold,
-              const double& a, 
-              const double& b) {
+void evolve(const sp_mat& A, const int& n_nodes,
+            vector<bool>& node_status, 
+            const vector<double>& threshold,
+            const double& a, 
+            const double& b) {
   
   vector<int> s_nodes = shuffled_nodes(A, n_nodes);
   
@@ -100,10 +107,10 @@ void evolve_e(const sp_mat& A, const int& n_nodes,
 
 }
 
-void evolve_ne(const sp_mat& A, const int& n_nodes,
-               vector<bool>& node_status, 
-               const vector<double>& threshold, 
-               const double& a) {
+void evolve(const sp_mat& A, const int& n_nodes,
+            vector<bool>& node_status, 
+            const vector<double>& threshold, 
+            const double& a) {
   vector<int> s_nodes = shuffled_nodes(A, n_nodes);
   
   for (auto& node : s_nodes) {
@@ -138,8 +145,8 @@ DataFrame simulate(const sp_mat& A,
     
     for (int t = 1; t <= T; ++t) {
 
-      evolve_e(A, n_nodes, node_status_e, threshold, a_i, b_i);
-      evolve_ne(A, n_nodes, node_status_ne, threshold, a_i);
+      evolve(A, n_nodes, node_status_e, threshold, a_i, b_i);
+      evolve(A, n_nodes, node_status_ne, threshold, a_i);
 
       realizations.push_back(r);
       time_steps.push_back(t);
