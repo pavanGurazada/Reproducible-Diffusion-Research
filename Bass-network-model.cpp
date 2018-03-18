@@ -4,28 +4,79 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::plugins(cpp11)]]
 
-using Rcpp::DataFrame;
-using Rcpp::Environment;
-using Rcpp::Function;
-using Rcpp::Named;
-using Rcpp::S4;
-using Rcpp::as;
-using Rcpp::Rcout;
+/**
+ * @title The Bass model on a network
+ * @author Pavan Gurazada
+ * @licence GPL (>=2)
+ * @summary Demonstrates the execution of a complex model of network diffusion.
+ *   Replicates the results from "Agend-based models in marketing: Guidelines
+ *   for rigor", Rand and Rust (2011).
+ * 
+ */
 
-using arma::sp_mat;
-using arma::vec;
-using arma::randu;
+/**
+ * # Introduction
+ * 
+ * Rand and Rust (2011) establish a blue-print for executing diffusion
+ * simulation studies and formalize several steps that are required to be
+ * followed in the execution of such models. The explicit time dependence of
+ * diffusion simulations makes the execution times in R slow. While execution
+ * times can be sped up using vectorized code, there are fundamental assumptions
+ * (like that of synchronous updates) that violate the basic tenets of diffusion
+ * processes.
+ *
+ * This script presents a framework to set up and execute diffusion simulations
+ * using `Rcpp`. The `igraph` `R` library is used to generate built-in network
+ * structures and the entire simulation is executed in `C++` for speed.
+ *
+ * Our conceptualization of diffusion simulations is composed of a set of verbs
+ * - `initialize`, `reset`, `seed`, `evolve` and `simulate`(hat-tip to `dplyr`
+ * and `particles`). The process of simulation (executed by the exported
+ * function `simlate`) is at its core a repeated execution of the following
+ * sequence:
+ *
+ * `reset(...) %>% seed(...) %>% evolve`
+ *
+ * Along the way, we also present several helper functions that build bridges between
+ * the functions within R packages and C++.
+ */
 
-using std::vector;
+using namespace Rcpp;
+
+/**
+ * The model we wish to replicate is an extension of the traditional Bass model
+ * where the diffusion of products is dependent on three parameters:
+ *
+ * 1. The social network of the users in the market (represented by an adjacency
+ * matrix `A`) 
+ * 2. The influence of external communication (e.g., advertising) on
+ * adoption (represented by `p`) 
+ * 3. The influence of word-of-mouth from friends
+ * (represented by `q`)
+ * 
+ * Consequently, the model is conceptualized and stored as a struct with these
+ * parameters that are initialized at each realization of the simulation.
+ */
 
 struct BassModel {
-  sp_mat A;
+  arma::sp_mat A;
   double p;
   double q;
 };
 
-vector<int> neighbours(const sp_mat& A, const int& node) {
-  vector<int> nbrs; 
+/**
+ * # Overview of key functions
+ * 
+ * The first helper function `neighbors(...)` returns a vector of neighbors for a
+ * given node. Parallel functionality exists in `igraph`, but we re-create
+ * this C++ function to avoid the message passing overhead between R and C++.
+ *
+ * This function indexes into the corresponding column of the adjacency matrix
+ * and returns the indices of all non-zero entries in the column
+ */
+
+std::vector<int> neighbours(const arma::sp_mat& A, const int& node) {
+  std::vector<int> nbrs; 
   
   for (std::size_t i = 0; i < A.n_cols; ++i) {
     if (A(i, node-1) == 1) nbrs.push_back(i+1);
@@ -34,20 +85,34 @@ vector<int> neighbours(const sp_mat& A, const int& node) {
   return nbrs;
 }
 
-vector<int> shuffled_nodes(const sp_mat& A) {
-  vector<int> sn;
+/**
+ * The second helper function `shuffled_nodes(...)` returns a sample vector
+ * of nodes drawn at random from the original set of vertices in the network.
+ * This is used to randomize the order of updation of the node status at each 
+ * step of the diffusion process. 
+ */
+
+std::vector<int> shuffled_nodes(const arma::sp_mat& A) {
+  std::vector<int> sn;
   
   for (std::size_t i = 1; i <= A.n_cols; ++i) {
     sn.push_back(i);
   }
   
-  random_shuffle(sn.begin(), sn.end());
+  std::random_shuffle(sn.begin(), sn.end());
   
   return sn;
 }
 
-vector<int> reset_nodes(BassModel& M) {
-  vector<int> node_status;
+/**
+ * The third helper function `reset_nodes(...)` returns a vector of 0's
+ * indicating the false adoption status of all nodes at the beginning of each
+ * diffusion process
+ * 
+ */
+
+std::vector<int> reset_nodes(BassModel& M) {
+  std::vector<int> node_status;
   
   for (std::size_t i = 0; i < M.A.n_cols; ++i) {
     node_status.push_back(0);
@@ -56,7 +121,7 @@ vector<int> reset_nodes(BassModel& M) {
   return node_status;
 }
 
-double adoption_prob(vector<int>& node_status, BassModel& M, const int& node) {
+double adoption_prob(std::vector<int>& node_status, BassModel& M, const int& node) {
   int n_adopted_nbrs = 0;
   
   for (auto& nbr : neighbours(M.A, node)) {
@@ -69,18 +134,18 @@ double adoption_prob(vector<int>& node_status, BassModel& M, const int& node) {
     
 }
 
-void evolve(vector<int>& node_status, BassModel& M){
+void evolve(std::vector<int>& node_status, BassModel& M){
   
   for (auto& node: shuffled_nodes(M.A)) {
     
     if (node_status[node-1] == 0) {
-      if ((randu() < M.p) || (randu() < adoption_prob(node_status, M, node)))
+      if ((arma::randu() < M.p) || (arma::randu() < adoption_prob(node_status, M, node)))
         node_status[node-1] = 1;
     }
   }
 }
 
-sp_mat get_adjacency_er(int n, double p) {
+arma::sp_mat get_adjacency_er(int n, double p) {
   Environment igraph("package:igraph");
   Function game_er = igraph["erdos.renyi.game"];
   Function adj_mat = igraph["get.adjacency"];
@@ -88,12 +153,12 @@ sp_mat get_adjacency_er(int n, double p) {
   SEXP g = game_er(Named("n", n), Named("p", p));
   S4 Am = adj_mat(Named("g", g));
   
-  sp_mat A = as<sp_mat>(Am);
+  arma::sp_mat A = as<arma::sp_mat>(Am);
   
   return A;
 }
 
-sp_mat get_adjacency_ba(int n, int m) {
+arma::sp_mat get_adjacency_ba(int n, int m) {
   Environment igraph("package:igraph");
   Function game_ba = igraph["sample_pa"];
   Function adj_mat = igraph["get.adjacency"];
@@ -101,7 +166,7 @@ sp_mat get_adjacency_ba(int n, int m) {
   SEXP g = game_ba(Named("n", n), Named("m", m));
   S4 Am = adj_mat(Named("g", g));
   
-  sp_mat A = as<sp_mat>(Am);
+  arma::sp_mat A = as<arma::sp_mat>(Am);
   
   return A;
 }
@@ -110,16 +175,16 @@ sp_mat get_adjacency_ba(int n, int m) {
 DataFrame simulate_er(int n_i, int k_i, double p_i, double q_i, 
                       const int n_realizations = 10, const int T = 30) {
   
-  vector<int> n, k, realizations, time_steps, n_engaged;
-  vector<double> p, q;
+  std::vector<int> n, k, realizations, time_steps, n_engaged;
+  std::vector<double> p, q;
   
   for (int r = 1; r <= n_realizations; ++r) {
     Rcout << "Starting the realization :" << r << std::endl;
     
-    sp_mat A = get_adjacency_er(n_i, k_i/n_i);
+    arma::sp_mat A = get_adjacency_er(n_i, k_i/n_i);
     BassModel M = {A, p_i, q_i};
     
-    vector<int> node_status = reset_nodes(M);
+    std::vector<int> node_status = reset_nodes(M);
     
     for (int t = 1; t <= T; ++t) {
       evolve(node_status, M);
@@ -149,16 +214,16 @@ DataFrame simulate_er(int n_i, int k_i, double p_i, double q_i,
 DataFrame simulate_ba(int n_i, int m_i, double p_i, double q_i, 
                       const int n_realizations = 10, const int T = 30) {
   
-  vector<int> n, m, realizations, time_steps, n_engaged;
-  vector<double> p, q;
+  std::vector<int> n, m, realizations, time_steps, n_engaged;
+  std::vector<double> p, q;
   
   for (int r = 1; r <= n_realizations; ++r) {
     //Rcout << "Starting the realization :" << r << std::endl;
     
-    sp_mat A = get_adjacency_ba(n_i, m_i);
+    arma::sp_mat A = get_adjacency_ba(n_i, m_i);
     BassModel M = {A, p_i, q_i};
     
-    vector<int> node_status = reset_nodes(M);
+    std::vector<int> node_status = reset_nodes(M);
     
     for (int t = 1; t <= T; ++t) {
       evolve(node_status, M);
@@ -213,5 +278,10 @@ for (m in 1:10) {
   cat("[Player] Starting simulations for min degree : ", m, " at ", format(Sys.time(), "%H:%M"), "\n")
   results <- rbind(results, simulate_ba(220, m, 0.0247960, 0.65410)) # Player
 }
+
+result_summary <- results %>% group_by(n, m, p, q, time_steps) %>% 
+                             summarize(mean_engaged = mean(n_engaged)) %>% 
+                             group_by(n, m, p, q) %>% 
+                             mutate(incremental_engaged = mean_engaged - lag(mean_engaged))
 
 */
