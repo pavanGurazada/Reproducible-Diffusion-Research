@@ -1,7 +1,8 @@
 using LightGraphs, Distributions
 using DataFrames
-using ProgrssMeter
+using ProgressMeter
 
+using Plots
 srand(20130810)
 
 """
@@ -50,11 +51,9 @@ end
 # logical definition for normal networks where the threshold can be any number
 # from 1 to the number of neighbors of each node
 function initialize_threshold!(M::CentolaMacyModel)
-
     for node in vertices(M.G)
         push!(M.threshold, sample(1:length(neighbors(M.G, node))))
     end
-
 end
 
 function seed!(M::CentolaMacyModel)
@@ -81,21 +80,19 @@ end
 # How many nodes get engaged in these cascades?
 
 function simulate(n::Int, k::Int, n_realizations::Int; T = 20)
-
     end_times = DataFrame(r = Int[], end_time = Int[], engaged_nodes = Int[])
 
     @showprogress 1 "Simulating..." for r in 1:n_realizations
 
         g = barabasi_albert(n, k)
-
         M = CentolaMacyModel(g, Int[], falses(nv(g)))
+
         initialize_threshold!(M)
         seed!(M)
         evolve!(M)
         n_newly_active = sum(M.node_status)
 
         t = 0
-
         while (n_newly_active > 0) && (t < T)
             t += 1
             evolve!(M)
@@ -103,27 +100,22 @@ function simulate(n::Int, k::Int, n_realizations::Int; T = 20)
         end
 
         push!(end_times, [r, t, sum(M.node_status)])
-
     end
-
     return end_times
-
 end
 
 function simulate(n::Int, k::Int, theta_max::Float64, n_realizations::Int; T = 20)
-
     end_times = DataFrame(r = Int[], end_time = Int[], engaged_nodes = Int[])
 
     @showprogress "Simulating..." for r in 1:n_realizations
 
         g = barabasi_albert(n, k)
-
         M = CentolaMacyModel(g, Int[], falses(nv(g)))
         initialize_threshold!(M, theta_max)
         seed!(M)
         evolve!(M)
-        n_newly_active = sum(M.node_status)
 
+        n_newly_active = sum(M.node_status)
         t = 0
 
         while (n_newly_active > 0) && (t < T)
@@ -131,12 +123,12 @@ function simulate(n::Int, k::Int, theta_max::Float64, n_realizations::Int; T = 2
             evolve!(M)
             n_newly_active = sum(M.node_status) - n_newly_active
         end
-
         push!(end_times, [r, t, sum(M.node_status)])
     end
-
     return end_times
 end
 
 @time results = simulate(10^5, 3, 100)
 @time results_thetamax = simulate(10^5, 3, 5.0736, 1000)
+
+head(results_thetamax)
