@@ -1,6 +1,6 @@
 # Reproducible Diffusion Research
 
-This repository hosts code that reproduces classic models/papers that employ diffusion simulations. 
+This repository hosts code that reproduces classic models/papers that employ diffusion simulations.
 
 ## Index
 
@@ -9,3 +9,4 @@ This repository hosts code that reproduces classic models/papers that employ dif
 3. [McCullen et. al (2012)](Innovation-uptake-model.ipynb)
 4. [Goldenberg, Libai and Muller (2010)](Chilling-effect-of-network-externalities.ipynb)
 5. [Rand and Rust (2011)](Bass-network-model.cpp)
+6. [Gleeson and Durrett (2017)](Centola-Macy-Model.jl)
