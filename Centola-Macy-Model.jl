@@ -1,8 +1,8 @@
 using LightGraphs, Distributions
+
 using DataFrames
 using ProgressMeter
 
-using Plots
 srand(20130810)
 
 """
