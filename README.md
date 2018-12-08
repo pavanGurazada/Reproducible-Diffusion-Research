@@ -10,3 +10,4 @@ This repository hosts code that reproduces classic models/papers that employ dif
 4. [Goldenberg, Libai and Muller (2010)](Chilling-effect-of-network-externalities.ipynb)
 5. [Rand and Rust (2011)](Bass-network-model.cpp)
 6. [Gleeson and Durrett (2017)](Centola-Macy-Model.jl)
+7. [Goldenberg, Libai and Muller (2002)](saddles/01_overview.ipynb)
