@@ -6,3 +6,5 @@
 
 *.html linguist-detectable=false
 *.pdf linguist-detectable=false
+*.ipnyb linguist-detectable=true
+*.jl linguist-detectable=true
