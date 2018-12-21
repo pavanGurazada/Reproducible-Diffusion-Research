@@ -1,7 +1,7 @@
 *.R linguist-language=R
 *.Rmd linguist-language=R
 *.Rnw linguist-language=R
-*.ipnyb linguist-language=Julia
+*.ipynb linguist-language=Julia
 *.jl linguist-language=Julia
 
 *.html linguist-detectable=false
